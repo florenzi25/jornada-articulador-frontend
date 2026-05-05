@@ -5,877 +5,438 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jornada do Articulador — RBAC</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap');
+  /* Importando as fontes oficiais Barlow conforme o Guia de Identidade */
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap');
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   :root {
-    --primary: #1a6b4a; --primary-light: #e8f5ee; --primary-mid: #2d9b6e;
-    --accent: #f4a100; --accent-light: #fff8e6;
-    --bg: #f4f6f5; --card: #ffffff;
-    --text: #1a2820; --text-2: #4a6358; --text-3: #8aab9a;
-    --border: #d0e4da; --danger: #c0392b; --info: #1565c0; --info-light: #e3eefa;
-    --purple: #6c3eb8; --purple-light: #f0eafb; --orange: #e07b39; --orange-light: #fdf0e8;
+    /* Paleta Oficial RBAC */
+    --primary: #8cc740;        /* Verde RBAC */
+    --primary-dark: #7ab335;
+    --primary-light: #f4faeb;
+    
+    --accent: #f7bd26;         /* Amarelo RBAC */
+    --accent-dark: #dfaa22;
+    
+    --turquoise: #00a9ab;      /* Turquesa */
+    --orange: #f26522;         /* Laranja */
+    --pink: #e91e63;           /* Rosa/Magenta */
+    --blue: #1b75bb;           /* Azul */
+    
+    /* Neutros e Estrutura */
+    --bg: #f9fbf8; 
+    --card: #ffffff;
+    --text: #1a1a1a;           /* Cinza Quase Preto */
+    --text-light: #555555;
+    --border: #e2e8f0;
+    --border-brand: #c8e8a0;   /* Verde claro para bordas de inputs */
+    
+    --danger: #e91e63;
+    --success: #8cc740;
+    
+    /* Sombras e Raios */
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
   }
-  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
-  /* ── HEADER ── */
-  .app-header { background: var(--primary); color: white; padding: 0 1.5rem; display: flex; align-items: center; gap: 1rem; height: 56px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
-  .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 1.05rem; letter-spacing: -.02em; }
-  .logo span { color: var(--accent); }
-  .header-right { margin-left: auto; font-size: .78rem; opacity: .8; display: flex; align-items: center; gap: .75rem; }
-  .api-status { width: 8px; height: 8px; border-radius: 50%; background: #aaa; display: inline-block; }
-  .api-status.online  { background: #4ade80; }
-  .api-status.offline { background: #f87171; }
+  body {
+    font-family: 'Barlow', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  /* ── NAV ── */
-  .app-nav { background: white; border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; padding: 0 1rem; gap: .25rem; }
-  .nav-btn { padding: .65rem 1rem; border: none; background: none; color: var(--text-2); font-family: 'Nunito', sans-serif; font-size: .82rem; font-weight: 600; cursor: pointer; border-bottom: 2.5px solid transparent; white-space: nowrap; transition: all .15s; display: flex; align-items: center; gap: .4rem; }
-  .nav-btn:hover { color: var(--primary); }
-  .nav-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+  h1, h2, h3, .brand-font {
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
 
-  /* ── MAIN ── */
-  .main { flex: 1; padding: 1.5rem; max-width: 1100px; margin: 0 auto; width: 100%; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
-  .card-title { font-size: .9rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem; }
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
-  .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; font-weight: 600; }
+  /* ════════════════════════════════════════════════════════════
+     LAYOUT
+     ════════════════════════════════════════════════════════════ */
 
-  /* ── LOADING OVERLAY ── */
-  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.7); z-index: 500; align-items: center; justify-content: center; }
-  .loading-overlay.show { display: flex; }
-  .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  header {
+    background: var(--card);
+    padding: 1rem 2.5rem;
+    border-bottom: 4px solid var(--primary);
+    box-shadow: var(--shadow);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
 
-  /* ── FORMS ── */
-  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; }
-  .form-group { display: flex; flex-direction: column; gap: .35rem; }
-  .form-group.full { grid-column: 1 / -1; }
-  label { font-size: .78rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
-  input, select, textarea { padding: .5rem .75rem; border: 1px solid var(--border); border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: .88rem; color: var(--text); background: white; transition: border-color .15s; }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-mid); }
-  textarea { resize: vertical; min-height: 80px; }
+  .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
-  /* ── CHECKBOXES ── */
-  .checkbox-group { display: flex; flex-wrap: wrap; gap: .4rem; }
-  .cb-item { display: flex; align-items: center; gap: .35rem; font-size: .8rem; cursor: pointer; background: var(--bg); padding: .3rem .65rem; border-radius: 20px; border: 1px solid var(--border); transition: all .15s; }
-  .cb-item:hover { border-color: var(--primary-mid); background: var(--primary-light); }
-  .cb-item input[type=checkbox] { accent-color: var(--primary); }
-  .cb-item.checked { background: var(--primary-light); border-color: var(--primary-mid); color: var(--primary); font-weight: 600; }
+  .brand-logo {
+    height: 50px; /* Altura otimizada para o logótipo */
+    width: auto;
+    display: block;
+  }
 
-  /* ── BUTTONS ── */
-  .btn { padding: .55rem 1.1rem; border-radius: 8px; border: none; font-family: 'Nunito', sans-serif; font-size: .85rem; font-weight: 700; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: .4rem; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-primary   { background: var(--primary); color: white; }
-  .btn-primary:hover:not(:disabled)   { background: var(--primary-mid); }
-  .btn-secondary { background: white; color: var(--primary); border: 1px solid var(--border); }
-  .btn-secondary:hover:not(:disabled) { background: var(--primary-light); }
-  .btn-sm     { padding: .35rem .75rem; font-size: .78rem; }
-  .btn-danger { background: #fdf0ef; color: var(--danger); border: 1px solid #f5c6c6; }
-  .btn-accent { background: var(--accent); color: white; }
-  .btn-accent:hover:not(:disabled) { background: #d48f00; }
+  .brand-divider {
+    width: 1px;
+    height: 30px;
+    background: var(--border);
+    margin: 0 4px;
+  }
 
-  /* ── TAGS ── */
-  .tag { display: inline-flex; align-items: center; padding: .25rem .6rem; border-radius: 20px; font-size: .75rem; font-weight: 700; }
-  .tag-green  { background: var(--primary-light); color: var(--primary); }
-  .tag-amber  { background: var(--accent-light); color: #b37900; }
-  .tag-blue   { background: var(--info-light); color: var(--info); }
-  .tag-purple { background: var(--purple-light); color: var(--purple); }
-  .tag-orange { background: var(--orange-light); color: var(--orange); }
+  .container {
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+  }
 
-  /* ── AVATAR ── */
-  .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; overflow: hidden; }
-  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  /* ════════════════════════════════════════════════════════════
+     COMPONENTES
+     ════════════════════════════════════════════════════════════ */
 
-  /* ── FOTO UPLOAD ── */
-  .foto-upload-area { display: flex; align-items: center; gap: 1.25rem; padding: 1rem; background: var(--bg); border-radius: 12px; border: 1.5px dashed var(--border); cursor: pointer; transition: border-color .2s, background .2s; }
-  .foto-upload-area:hover { border-color: var(--primary-mid); background: var(--primary-light); }
-  .foto-preview { width: 72px; height: 72px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.4rem; flex-shrink: 0; overflow: hidden; border: 2px solid var(--border); }
-  .foto-preview img { width: 100%; height: 100%; object-fit: cover; }
-  #input-foto-art { display: none; }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease;
+  }
 
-  /* ── ARTICULADOR CARD ── */
-  .articulador-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 1rem; display: flex; align-items: flex-start; gap: 1rem; transition: box-shadow .15s; cursor: pointer; }
-  .articulador-card:hover { box-shadow: 0 2px 12px rgba(0,80,50,.1); }
-  .articulador-info { flex: 1; min-width: 0; }
-  .articulador-name { font-weight: 700; font-size: .95rem; margin-bottom: .25rem; }
-  .articulador-meta { font-size: .78rem; color: var(--text-2); display: flex; flex-wrap: wrap; gap: .5rem; }
+  .btn {
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+  }
 
-  /* ── ATIVIDADE ROW ── */
-  .atividade-row { display: flex; align-items: center; gap: 1rem; padding: .75rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: white; margin-bottom: .5rem; }
-  .ativ-date { font-size: .78rem; color: var(--text-3); min-width: 80px; }
-  .ativ-name { font-weight: 600; font-size: .88rem; flex: 1; }
+  .btn:active {
+    transform: translateY(2px);
+  }
 
-  /* ── STATS ── */
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
-  .stat-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
-  .stat-num   { font-size: 2rem; font-weight: 800; color: var(--primary); line-height: 1; }
-  .stat-label { font-size: .75rem; color: var(--text-2); margin-top: .35rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .btn-primary {
+    background-color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 0 var(--primary-dark);
+  }
+  .btn-primary:hover {
+    background-color: var(--primary-dark);
+  }
 
-  /* ── PROGRESS ── */
-  .progress-bar  { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; margin: .35rem 0; }
-  .progress-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width .5s; }
+  .btn-accent {
+    background-color: var(--accent);
+    color: var(--text);
+    box-shadow: 0 4px 0 var(--accent-dark);
+  }
 
-  /* ── BAR CHART ── */
-  .bar-chart { display: flex; flex-direction: column; gap: .5rem; }
-  .bar-row   { display: flex; align-items: center; gap: .75rem; font-size: .82rem; }
-  .bar-label { min-width: 130px; color: var(--text-2); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bar-track { flex: 1; height: 18px; background: var(--bg); border-radius: 4px; overflow: hidden; }
-  .bar-fill  { height: 100%; border-radius: 4px; background: var(--primary); transition: width .6s; }
-  .bar-val   { min-width: 25px; text-align: right; font-weight: 700; color: var(--primary); }
+  .input-group {
+    margin-bottom: 1.2rem;
+  }
 
-  /* ── MODAL ── */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: flex-start; justify-content: center; padding: 2rem 1rem; overflow-y: auto; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: white; border-radius: 16px; width: 100%; max-width: 700px; padding: 1.5rem; position: relative; margin: auto; }
-  .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
-  .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-2); }
+  label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+    color: var(--text-light);
+    font-size: 0.85rem;
+  }
 
-  /* ── MISC ── */
-  .grid-2  { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: .75rem; }
-  .grid-3  { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .75rem; }
-  .divider { height: 1px; background: var(--border); margin: 1rem 0; }
-  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-3); }
-  .empty-state .big { font-size: 2.5rem; margin-bottom: .5rem; }
-  .filter-bar { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; align-items: center; }
-  .filter-bar select, .filter-bar input { padding: .4rem .65rem; font-size: .82rem; }
-  .search-box { position: relative; }
-  .search-box input { padding-left: 2rem; }
-  .search-icon { position: absolute; left: .6rem; top: 50%; transform: translateY(-50%); font-size: .9rem; pointer-events: none; }
-  .inner-tabs { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
-  .inner-tab { padding: .4rem .9rem; border-radius: 20px; border: 1px solid var(--border); background: white; color: var(--text-2); font-size: .8rem; font-weight: 700; cursor: pointer; transition: all .15s; }
-  .inner-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
-  .projeto-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: .75rem; }
-  .rede-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: .5rem; }
-  .competencia-tag { display: inline-block; padding: .2rem .5rem; border-radius: 12px; font-size: .72rem; font-weight: 700; margin: .15rem; }
-  .ferramenta-item { display: flex; align-items: center; gap: .75rem; padding: .65rem 1rem; background: white; border: 1px solid var(--border); border-radius: 8px; margin-bottom: .5rem; }
-  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: .75rem 1.25rem; border-radius: 10px; font-size: .88rem; font-weight: 600; z-index: 999; transform: translateY(100px); transition: transform .3s; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
-  .toast.show { transform: translateY(0); }
-  @media (max-width:600px) { .main { padding: 1rem; } .form-grid { grid-template-columns: 1fr; } .section-header { flex-direction: column; align-items: flex-start; gap: .5rem; } }
+  input, select, textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--border-brand);
+    border-radius: var(--radius-md);
+    font-family: 'Barlow', sans-serif;
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(140, 199, 64, 0.15);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .articulador-card {
+    border-top: 6px solid var(--primary);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .articulador-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border: 1px solid var(--border-brand);
+  }
+
+  .ferramentas-list {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border);
+  }
+
+  .ferramenta-item {
+    background: var(--bg);
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.6rem;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+  
+  .ferramenta-item:hover {
+    border-color: var(--border-brand);
+  }
+
+  /* Categorias com Cores RBAC */
+  .cat-digital { border-left: 3px solid var(--blue); }
+  .cat-desplugada { border-left: 3px solid var(--orange); }
+  .cat-metodologia { border-left: 3px solid var(--turquoise); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(26, 40, 32, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(6px);
+  }
+
+  .modal-content {
+    background: white;
+    width: 95%;
+    max-width: 480px;
+    padding: 2.5rem;
+    border-radius: var(--radius-lg);
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  .modal-stripe {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 8px;
+    background: var(--primary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  /* API Status */
+  #api-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-light);
+    text-transform: uppercase;
+    background: var(--bg);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+  .dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
-<div class="loading-overlay" id="loading-overlay"><div class="spinner"></div></div>
+<header>
+  <div class="logo-container">
+    <!-- Logotipo Principal Integrado -->
+    <img src="Copy of 02-RBAC-LogotipoPrincipal-UmaCor.png" alt="Logotipo RBAC" class="brand-logo" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block'">
+    
+    <!-- Fallback caso a imagem não carregue -->
+    <div id="logo-fallback" style="display:none; font-weight:800; color:var(--primary); font-size: 1.5rem;" class="brand-font">RBAC</div>
+    
+    <div class="brand-divider"></div>
+    
+    <div>
+      <span style="display:block; font-size: 0.85rem; color: var(--text); font-weight: 800; font-family: 'Barlow Semi Condensed'; text-transform: uppercase; letter-spacing: 0.5px;">Jornada do</span>
+      <span style="display:block; font-size: 0.7rem; color: var(--text-light); font-weight: 600; text-transform: uppercase;">Articulador de Rede</span>
+    </div>
+  </div>
+  
+  <div style="display: flex; align-items: center; gap: 1.5rem;">
+    <div id="api-status">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text">Conectando</span>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('modal-articulador')">
+      <span>+</span> Novo Articulador
+    </button>
+  </div>
+</header>
 
-<!-- HEADER -->
-<div class="app-header">
-  <div class="logo">Jornada do <span>Articulador</span> ✦ RBAC v2</div>
-  <div class="header-right">
-    <span class="api-status" id="api-status-dot"></span>
-    <span id="header-info">Conectando...</span>
+<div class="container" id="main-content">
+  <div style="text-align: center; padding: 5rem 2rem;" id="loading">
+    <p class="brand-font" style="color: var(--primary); font-size: 1.2rem;">Sincronizando com a Rede...</p>
+  </div>
+
+  <div id="articuladores-grid" class="grid"></div>
+</div>
+
+<!-- Modal Articulador -->
+<div id="modal-articulador" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-stripe"></div>
+    <h2 style="margin-bottom: 1.5rem; color: var(--primary);">Cadastrar Articulador</h2>
+    <div class="input-group">
+      <label>Nome do Articulador</label>
+      <input type="text" id="art-nome" placeholder="Nome Completo">
+    </div>
+    <div class="input-group">
+      <label>Núcleo Criativo / Cidade</label>
+      <input type="text" id="art-nucleo" placeholder="Ex: Núcleo Criativo BH">
+    </div>
+    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+      <button class="btn" style="flex:1; background: #f0f0f0;" onclick="closeModal('modal-articulador')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="salvarArticulador()">Criar Cadastro</button>
+    </div>
   </div>
 </div>
 
-<!-- NAV -->
-<nav class="app-nav">
-  <button class="nav-btn active" onclick="showModule('articuladores')" id="nav-articuladores">👤 Articuladores</button>
-  <button class="nav-btn" onclick="showModule('atividades')"   id="nav-atividades">📋 Atividades</button>
-  <button class="nav-btn" onclick="showModule('dashboard')"   id="nav-dashboard">📊 Dashboard</button>
-  <button class="nav-btn" onclick="showModule('rede')"        id="nav-rede">🤝 Rede Colaborativa</button>
-  <button class="nav-btn" onclick="showModule('projetos')"    id="nav-projetos">💡 Projetos</button>
-  <button class="nav-btn" onclick="showModule('ferramentas')" id="nav-ferramentas">🧰 Ferramentas</button>
-</nav>
-
-<main class="main" id="main-content"></main>
-
-<!-- ═══════════ MODAIS ═══════════ -->
-
-<!-- ARTICULADOR -->
-<div class="modal-overlay" id="modal-articulador">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('modal-articulador')">✕</button>
-    <div class="modal-title" id="modal-articulador-title">Cadastrar Articulador</div>
-    <form id="form-articulador" onsubmit="saveArticulador(event)">
-      <div class="form-group full" style="margin-bottom:1rem">
-        <label>Foto de Perfil</label>
-        <div class="foto-upload-area" onclick="document.getElementById('input-foto-art').click()">
-          <div class="foto-preview" id="foto-preview-modal"><span id="foto-initials-modal">?</span></div>
-          <div class="foto-upload-text" style="flex:1">
-            <strong style="font-size:.88rem;display:block">Clique para selecionar uma foto</strong>
-            <span style="font-size:.78rem;color:var(--text-3)">JPG, PNG · máx. 3 MB · será redimensionada para 400×400</span>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:.4rem" onclick="event.stopPropagation()">
-            <button type="button" style="padding:.4rem .9rem;border-radius:8px;background:white;border:1px solid var(--border);font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:700;color:var(--primary);cursor:pointer" onclick="document.getElementById('input-foto-art').click()">📷 Escolher</button>
-            <button type="button" id="btn-remove-foto" style="display:none;padding:.3rem .7rem;border-radius:8px;background:#fdf0ef;border:1px solid #f5c6c6;font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;color:var(--danger);cursor:pointer" onclick="removeFoto()">✕ Remover</button>
-          </div>
-        </div>
-        <input type="file" id="input-foto-art" accept="image/*" onchange="handleFotoLocal(event)">
-      </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Nome Completo *</label>
-          <input type="text" id="art-nome" required placeholder="Nome do articulador" oninput="updateFotoInitials(this.value)">
-        </div>
-        <div class="form-group"><label>Núcleo Regional</label><input type="text" id="art-nucleo" placeholder="Ex: Núcleo Salvador"></div>
-        <div class="form-group"><label>Ocupação</label>
-          <select id="art-ocupacao"><option value="">Selecione...</option><option>Professor(a)</option><option>Gestor(a)</option><option>Coordenador(a)</option><option>Artista</option><option>Pesquisador(a)</option><option>Outro</option></select>
-        </div>
-        <div class="form-group"><label>Área de Formação</label><input type="text" id="art-formacao" placeholder="Ex: Pedagogia"></div>
-        <div class="form-group"><label>Área de Atuação</label>
-          <select id="art-atuacao"><option value="">Selecione...</option><option>Educação Infantil</option><option>Ensino Fundamental I (EFI)</option><option>Ensino Fundamental II (EFII)</option><option>Ensino Médio (EM)</option><option>EJA</option><option>Todas as etapas</option></select>
-        </div>
-        <div class="form-group"><label>Nível de Instrução</label>
-          <select id="art-instrucao"><option value="">Selecione...</option><option>Graduação (licenciatura – Plataforma Capes)</option><option>Especialização (Currículo Lattes)</option><option>Mestrado</option><option>Doutorado</option></select>
-        </div>
-        <div class="form-group full"><label>Competências para Compartilhar</label><div class="checkbox-group" id="cb-competencias"></div></div>
-        <div class="form-group full"><label>Cursos em Aprendizagem Criativa</label><div class="checkbox-group" id="cb-cursos"></div></div>
-        <div class="form-group full"><label>Eventos e Conferências</label><div class="checkbox-group" id="cb-eventos"></div></div>
-        <div class="form-group full">
-          <label>Projetos de pesquisa?</label>
-          <label style="text-transform:none;font-weight:600;font-size:.85rem;color:var(--text);margin-bottom:.4rem"><input type="checkbox" id="art-tem-pesquisa" onchange="toggleField('campo-pesquisa',this.checked)"> Sim, participo/participei</label>
-          <textarea id="campo-pesquisa" placeholder="Descreva os projetos ou inclua links..." style="display:none"></textarea>
-        </div>
-        <div class="form-group full">
-          <label>Projetos na comunidade?</label>
-          <label style="text-transform:none;font-weight:600;font-size:.85rem;color:var(--text);margin-bottom:.4rem"><input type="checkbox" id="art-tem-comunidade" onchange="toggleField('campo-comunidade',this.checked)"> Sim, participo/participei</label>
-          <textarea id="campo-comunidade" placeholder="Descreva os projetos ou inclua links..." style="display:none"></textarea>
-        </div>
-        <div class="form-group full"><label>Competências ou projetos adicionais</label><textarea id="art-adicionais" placeholder="Descreva competências ou projetos não listados..."></textarea></div>
-      </div>
-      <div style="display:flex;gap:.75rem;margin-top:1.25rem;justify-content:flex-end">
-        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-articulador')">Cancelar</button>
-        <button type="submit" class="btn btn-primary" id="btn-salvar-art">💾 Salvar Articulador</button>
-      </div>
-    </form>
+<!-- Modal Ferramenta -->
+<div id="modal-ferramenta" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-stripe" style="background: var(--turquoise);"></div>
+    <h2 style="margin-bottom: 1.5rem; color: var(--turquoise);">Nova Experiência</h2>
+    <input type="hidden" id="ferr-autor">
+    <div class="input-group">
+      <label>Ferramenta / Recurso</label>
+      <input type="text" id="ferr-nome" placeholder="Ex: Micro:bit, Papelão, Design Thinking...">
+    </div>
+    <div class="input-group">
+      <label>Categoria</label>
+      <select id="ferr-cat">
+        <option value="Digital">Digital</option>
+        <option value="Desplugada">Desplugada / Maker</option>
+        <option value="Metodologia">Metodologia / Prática</option>
+      </select>
+    </div>
+    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+      <button class="btn" style="flex:1; background: #f0f0f0;" onclick="closeModal('modal-ferramenta')">Voltar</button>
+      <button class="btn btn-accent" style="flex:2;" onclick="salvarFerramenta()">Adicionar Item</button>
+    </div>
   </div>
 </div>
-
-<!-- ATIVIDADE -->
-<div class="modal-overlay" id="modal-atividade">
-  <div class="modal" style="max-width:520px">
-    <button class="modal-close" onclick="closeModal('modal-atividade')">✕</button>
-    <div class="modal-title">Registrar Atividade</div>
-    <form id="form-atividade" onsubmit="saveAtividade(event)">
-      <div class="form-grid">
-        <div class="form-group"><label>Data *</label><input type="date" id="ativ-data" required></div>
-        <div class="form-group"><label>Articulador</label><select id="ativ-articulador"><option value="">Selecione...</option></select></div>
-        <div class="form-group full"><label>Nome da Atividade *</label><input type="text" id="ativ-nome" required placeholder="Título da atividade"></div>
-        <div class="form-group"><label>Tipo</label><select id="ativ-tipo"><option>Presencial</option><option>Virtual</option><option>Híbrido</option></select></div>
-        <div class="form-group"><label>Nº de Participantes</label><input type="number" id="ativ-participantes" min="0" placeholder="0"></div>
-        <div class="form-group"><label>Núcleo</label><input type="text" id="ativ-nucleo" placeholder="Núcleo relacionado"></div>
-        <div class="form-group"><label>Categoria</label><select id="ativ-categoria"><option>Formação</option><option>Oficina</option><option>Evento</option><option>Reunião</option><option>Live / Webinar</option><option>Outro</option></select></div>
-        <div class="form-group full"><label>Descrição</label><textarea id="ativ-descricao" placeholder="Descreva a atividade..."></textarea></div>
-        <div class="form-group full">
-          <label>Links de Fotos / Drive (até 3)</label>
-          <input type="url" id="ativ-foto1" placeholder="https://drive.google.com/...">
-          <input type="url" id="ativ-foto2" placeholder="https://drive.google.com/..." style="margin-top:.4rem">
-          <input type="url" id="ativ-foto3" placeholder="https://drive.google.com/..." style="margin-top:.4rem">
-        </div>
-      </div>
-      <div style="display:flex;gap:.75rem;margin-top:1.25rem;justify-content:flex-end">
-        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-atividade')">Cancelar</button>
-        <button type="submit" class="btn btn-primary">💾 Registrar</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- PROJETO -->
-<div class="modal-overlay" id="modal-projeto">
-  <div class="modal" style="max-width:520px">
-    <button class="modal-close" onclick="closeModal('modal-projeto')">✕</button>
-    <div class="modal-title">Novo Projeto</div>
-    <form id="form-projeto" onsubmit="saveProjeto(event)">
-      <div class="form-grid">
-        <div class="form-group full"><label>Título *</label><input type="text" id="proj-titulo" required placeholder="Nome do projeto"></div>
-        <div class="form-group full"><label>Descrição</label><textarea id="proj-desc" placeholder="Descreva a ideia..."></textarea></div>
-        <div class="form-group"><label>Proponente</label><select id="proj-proponente"><option value="">Selecione...</option></select></div>
-        <div class="form-group"><label>Status</label><select id="proj-status"><option>Ideia</option><option>Em desenvolvimento</option><option>Buscando parceiros</option><option>Em andamento</option><option>Concluído</option></select></div>
-        <div class="form-group full"><label>Tags (separadas por vírgula)</label><input type="text" id="proj-tags" placeholder="Ex: Scratch, Robótica, EJA"></div>
-      </div>
-      <div style="display:flex;gap:.75rem;margin-top:1.25rem;justify-content:flex-end">
-        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-projeto')">Cancelar</button>
-        <button type="submit" class="btn btn-primary">💾 Publicar</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- FERRAMENTA -->
-<div class="modal-overlay" id="modal-ferramenta">
-  <div class="modal" style="max-width:420px">
-    <button class="modal-close" onclick="closeModal('modal-ferramenta')">✕</button>
-    <div class="modal-title">Adicionar Ferramenta</div>
-    <form id="form-ferramenta" onsubmit="saveFerramenta(event)">
-      <div class="form-grid">
-        <div class="form-group full"><label>Nome *</label><input type="text" id="ferr-nome" required placeholder="Ex: Scratch"></div>
-        <div class="form-group full"><label>URL *</label><input type="url" id="ferr-url" required placeholder="https://..."></div>
-        <div class="form-group"><label>Categoria</label><select id="ferr-cat"><option>Programação</option><option>Robótica</option><option>Design</option><option>Vídeo</option><option>Colaboração</option><option>Formação</option><option>Outro</option></select></div>
-        <div class="form-group full"><label>Descrição</label><textarea id="ferr-desc" placeholder="Para que serve?"></textarea></div>
-        <div class="form-group"><label>Adicionado por</label><select id="ferr-autor"><option value="">Selecione...</option></select></div>
-      </div>
-      <div style="display:flex;gap:.75rem;margin-top:1.25rem;justify-content:flex-end">
-        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-ferramenta')">Cancelar</button>
-        <button type="submit" class="btn btn-primary">💾 Adicionar</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- DETALHE ARTICULADOR -->
-<div class="modal-overlay" id="modal-detalhe">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('modal-detalhe')">✕</button>
-    <div id="modal-detalhe-content"></div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-// CONFIGURAÇÃO — altere a URL da sua API aqui
-// ════════════════════════════════════════════════════════════
-const API_URL = 'https://jornada-articulador-api.onrender.com';
-// Em desenvolvimento local: const API_URL = 'http://localhost:3001';
-
-// ════════════════════════════════════════════════════════════
-// API CLIENT
-// ════════════════════════════════════════════════════════════
+// Mock de API para demonstração
 const api = {
-  async req(method, path, body) {
-    const opts = { method, headers: { 'Content-Type': 'application/json' } };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(API_URL + path, opts);
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || res.statusText); }
-    return res.json();
-  },
-  get:    (path)       => api.req('GET', path),
-  post:   (path, body) => api.req('POST', path, body),
-  put:    (path, body) => api.req('PUT', path, body),
-  delete: (path)       => api.req('DELETE', path),
-
-  async uploadFoto(articuladorId, file) {
-    const fd = new FormData();
-    fd.append('foto', file);
-    const res = await fetch(`${API_URL}/articuladores/${articuladorId}/foto`, { method:'POST', body: fd });
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error||res.statusText); }
-    return res.json();
-  }
+  get: () => Promise.resolve([
+    { id: 1, nome: "Juliana Silva", nucleo: "Núcleo Curitiba", ferramentas: [{id: 101, nome: "Arduino", categoria: "Digital"}] },
+    { id: 2, nome: "Ricardo Oliveira", nucleo: "Núcleo Manaus", ferramentas: [{id: 102, nome: "Stop Motion", categoria: "Digital"}, {id: 103, nome: "Sucata Criativa", categoria: "Desplugada"}] }
+  ])
 };
 
-// ════════════════════════════════════════════════════════════
-// ESTADO GLOBAL
-// ════════════════════════════════════════════════════════════
-let STATE = {
-  articuladores: [],
-  atividades:    [],
-  projetos:      [],
-  ferramentas:   [],
-  dashboard:     null
-};
-let editingArtId  = null;
-let fotoFile      = null;   // File object da foto selecionada
-let fotoPreviewB64 = '';    // base64 só para preview local
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-const COMPETENCIAS = ['Transmissão ao vivo/Lives (StreamYard)','Videoconferência (Meet/Zoom/etc)','Edição de foto e vídeo (Canva, Photoshop)','Criação de vídeos','Mediação de rodas comunitárias','Mediação em formações em AC','Mediação em formações em Computação Criativa','Scratch','micro:bit','OctoStudio','Prototipagem eletrônica (Arduino, Makey Makey, Franzinho)'];
-const CURSOS       = ['Aldeia Criativa','Design de Aprendizagem Criativa','As ideias de Seymour Papert e Aprendizagem Criativa','Learning Creative Learning (LCL)','Scratch para educadores','Residências Criativas (IAT-BA)'];
-const EVENTOS_CONF = ['Olimpíada Brasileira de Robótica (OBR)','Conferência da Aprendizagem Criativa (CBAC)','Semana da Aprendizagem Criativa','Festival de Invenção e Criatividade (FIC)','Encontro de Lideranças da RBAC','Desafio da Aprendizagem Criativa (DAC)','Scratch Day','Conferência Brasileira de Informática na Educação (trilha de AC)','Expedição Criativa MIT (ECs)'];
-
-// ════════════════════════════════════════════════════════════
-// UTILS
-// ════════════════════════════════════════════════════════════
-function getInitials(nome) { return (nome||'?').split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase(); }
-function avatarColor(nome) {
-  const cs=['#1a6b4a','#6c3eb8','#1565c0','#e07b39','#2d7d9a','#c0392b','#27ae60'];
-  let h=0; for(let c of (nome||'')) h+=c.charCodeAt(0);
-  return cs[h%cs.length];
-}
-function renderAvatar(a, size=44) {
-  const s = `width:${size}px;height:${size}px;font-size:${Math.round(size*.4)}px`;
-  if (a.foto_url)
-    return `<div class="avatar" style="${s}"><img src="${a.foto_url}" alt="${a.nome}"></div>`;
-  return `<div class="avatar" style="${s};background:${avatarColor(a.nome)}">${getInitials(a.nome)}</div>`;
-}
-function showToast(msg, color='var(--primary)') {
-  const t=document.getElementById('toast'); t.textContent=msg; t.style.background=color;
-  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800);
-}
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function toggleField(id, show) { document.getElementById(id).style.display=show?'block':'none'; }
-function showLoading(v) { document.getElementById('loading-overlay').classList.toggle('show',v); }
-
-function buildCheckboxes(cid, options, selected=[]) {
-  document.getElementById(cid).innerHTML = options.map(opt => {
-    const c = selected.includes(opt);
-    return `<label class="cb-item ${c?'checked':''}" onclick="toggleCb(this)">
-      <input type="checkbox" value="${opt}" ${c?'checked':''} style="display:none">${opt}</label>`;
-  }).join('');
-}
-function toggleCb(el) { el.classList.toggle('checked'); el.querySelector('input').checked=el.classList.contains('checked'); }
-function getChecked(cid) { return Array.from(document.getElementById(cid).querySelectorAll('input:checked')).map(i=>i.value); }
-function populateSelect(id) {
-  const el=document.getElementById(id); if(!el) return;
-  el.innerHTML='<option value="">Selecione...</option>'+STATE.articuladores.map(a=>`<option value="${a.id}">${a.nome}</option>`).join('');
-}
-function updateHeaderInfo() {
-  const dot=document.getElementById('api-status-dot');
-  dot.className='api-status online';
-  document.getElementById('header-info').textContent=`${STATE.articuladores.length} articuladores · ${STATE.atividades.length} atividades`;
-}
-function setApiOffline() {
-  document.getElementById('api-status-dot').className='api-status offline';
-  document.getElementById('header-info').textContent='API offline — verifique a conexão';
+function setApiStatus(online) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = online ? 'dot online' : 'dot';
+  txt.innerText = online ? 'Rede Ativa' : 'Offline';
 }
 
-// ════════════════════════════════════════════════════════════
-// NAV
-// ════════════════════════════════════════════════════════════
-let currentModule='articuladores';
-let artSearch='', ativFiltros={articulador:'',tipo:'',nucleo:'',de:'',ate:''};
-let redeSearch='', redeFilter='', projStatusFilter='Todos', projFilter='', ferrFilter='';
-
-async function showModule(m) {
-  currentModule=m;
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('nav-'+m).classList.add('active');
-  showLoading(true);
-  try {
-    const renders = { articuladores:renderArticuladores, atividades:renderAtividades, dashboard:renderDashboard, rede:renderRede, projetos:renderProjetos, ferramentas:renderFerramentas };
-    await renders[m]();
-  } catch(e) { showToast('❌ Erro ao carregar: '+e.message,'var(--danger)'); }
-  finally { showLoading(false); }
+function getCatClass(cat) {
+  if (cat.includes('Digital')) return 'cat-digital';
+  if (cat.includes('Desplugada')) return 'cat-desplugada';
+  return 'cat-metodologia';
 }
 
-// ════════════════════════════════════════════════════════════
-// ARTICULADORES
-// ════════════════════════════════════════════════════════════
 async function renderArticuladores() {
-  let params = '?'; if(artSearch) params+=`busca=${encodeURIComponent(artSearch)}&`;
-  STATE.articuladores = await api.get('/articuladores'+params);
-  const m=document.getElementById('main-content');
-  m.innerHTML=`
-    <div class="section-header">
-      <div class="section-title">👤 Articuladores</div>
-      <button class="btn btn-primary" onclick="abrirCadastro()">+ Cadastrar</button>
-    </div>
-    <div class="filter-bar">
-      <div class="search-box"><span class="search-icon">🔍</span>
-        <input type="text" placeholder="Buscar por nome ou núcleo..." value="${artSearch}"
-          oninput="artSearch=this.value;renderArticuladores()" style="padding-left:2rem;min-width:220px">
-      </div>
-      <span style="font-size:.82rem;color:var(--text-3)">${STATE.articuladores.length} encontrado(s)</span>
-    </div>
-    <div class="grid-2">
-      ${STATE.articuladores.length ? STATE.articuladores.map(a=>{
-        const atcnt=(STATE.atividades||[]).filter(t=>t.articulador_id===a.id).length;
-        return `<div class="articulador-card" onclick="verDetalhe('${a.id}')">
-          ${renderAvatar(a,44)}
-          <div class="articulador-info">
-            <div class="articulador-name">${a.nome}</div>
-            <div class="articulador-meta">
-              ${a.nucleo?`<span>🏠 ${a.nucleo}</span>`:''}
-              ${a.ocupacao?`<span>💼 ${a.ocupacao}</span>`:''}
-              ${a.atuacao?`<span>📚 ${a.atuacao}</span>`:''}
-            </div>
-            <div style="display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap">
-              ${a.instrucao?`<span class="tag tag-blue">${a.instrucao.split('(')[0].trim()}</span>`:''}
-              <span class="tag tag-green">${atcnt} atividade(s)</span>
-              ${a.competencias&&a.competencias.length?`<span class="tag tag-purple">${a.competencias.length} competência(s)</span>`:''}
-            </div>
-          </div>
-          <div onclick="event.stopPropagation()">
-            <button class="btn btn-sm btn-secondary" onclick="editarArticulador('${a.id}')">✏️</button>
-          </div>
-        </div>`;
-      }).join('') : '<div class="empty-state"><div class="big">👤</div><p>Nenhum articulador cadastrado.</p></div>'}
-    </div>`;
-  updateHeaderInfo();
-}
+  const grid = document.getElementById('articuladores-grid');
+  document.getElementById('loading').style.display = 'none';
+  
+  const articuladores = await api.get();
 
-function abrirCadastro(id=null) {
-  editingArtId=id; fotoFile=null; fotoPreviewB64='';
-  document.getElementById('input-foto-art').value='';
-  document.getElementById('modal-articulador-title').textContent=id?'Editar Articulador':'Cadastrar Articulador';
-  const a=id?STATE.articuladores.find(x=>x.id===id):null;
-  const v=f=>a?(a[f]||''):'';
-  document.getElementById('art-nome').value=v('nome');
-  document.getElementById('art-nucleo').value=v('nucleo');
-  document.getElementById('art-ocupacao').value=v('ocupacao');
-  document.getElementById('art-formacao').value=v('formacao');
-  document.getElementById('art-atuacao').value=v('atuacao');
-  document.getElementById('art-instrucao').value=v('instrucao');
-  document.getElementById('art-adicionais').value=v('adicionais');
-  const temP=a?a.tem_pesquisa:false, temC=a?a.tem_comunidade:false;
-  document.getElementById('art-tem-pesquisa').checked=temP;
-  document.getElementById('campo-pesquisa').style.display=temP?'block':'none';
-  document.getElementById('campo-pesquisa').value=v('pesquisa');
-  document.getElementById('art-tem-comunidade').checked=temC;
-  document.getElementById('campo-comunidade').style.display=temC?'block':'none';
-  document.getElementById('campo-comunidade').value=v('comunidade');
-  buildCheckboxes('cb-competencias',COMPETENCIAS,a?a.competencias||[]:[]);
-  buildCheckboxes('cb-cursos',CURSOS,a?a.cursos||[]:[]);
-  buildCheckboxes('cb-eventos',EVENTOS_CONF,a?a.eventos||[]:[]);
-  // Foto preview
-  const preview=document.getElementById('foto-preview-modal');
-  const removeBtn=document.getElementById('btn-remove-foto');
-  if(a&&a.foto_url) {
-    preview.innerHTML=`<img src="${a.foto_url}" alt="Foto">`;
-    if(removeBtn) removeBtn.style.display='block';
-  } else {
-    const nome=v('nome');
-    preview.innerHTML=`<span id="foto-initials-modal">${nome?getInitials(nome):'?'}</span>`;
-    if(removeBtn) removeBtn.style.display='none';
-  }
-  openModal('modal-articulador');
-}
-function editarArticulador(id) { abrirCadastro(id); }
-
-function handleFotoLocal(event) {
-  const file=event.target.files[0]; if(!file) return;
-  if(file.size>3*1024*1024) { showToast('⚠️ Imagem muito grande. Máx: 3 MB','var(--danger)'); return; }
-  fotoFile=file;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    fotoPreviewB64=e.target.result;
-    document.getElementById('foto-preview-modal').innerHTML=`<img src="${fotoPreviewB64}" alt="Preview">`;
-    const rb=document.getElementById('btn-remove-foto'); if(rb) rb.style.display='block';
-  };
-  reader.readAsDataURL(file);
-}
-function removeFoto() {
-  fotoFile=null; fotoPreviewB64='';
-  document.getElementById('input-foto-art').value='';
-  const nome=document.getElementById('art-nome').value;
-  document.getElementById('foto-preview-modal').innerHTML=`<span id="foto-initials-modal">${nome?getInitials(nome):'?'}</span>`;
-  const rb=document.getElementById('btn-remove-foto'); if(rb) rb.style.display='none';
-  showToast('Foto removida');
-}
-function updateFotoInitials(nome) {
-  if(fotoFile||fotoPreviewB64) return;
-  const el=document.getElementById('foto-initials-modal'); if(el) el.textContent=nome?getInitials(nome):'?';
-}
-
-async function saveArticulador(e) {
-  e.preventDefault();
-  const btn=document.getElementById('btn-salvar-art'); btn.disabled=true; btn.textContent='Salvando...';
-  try {
-    const payload = {
-      nome:v('art-nome'), nucleo:v('art-nucleo'), ocupacao:v('art-ocupacao'), formacao:v('art-formacao'),
-      atuacao:v('art-atuacao'), instrucao:v('art-instrucao'),
-      competencias:getChecked('cb-competencias'), cursos:getChecked('cb-cursos'), eventos:getChecked('cb-eventos'),
-      tem_pesquisa:document.getElementById('art-tem-pesquisa').checked,
-      pesquisa:v('campo-pesquisa'),
-      tem_comunidade:document.getElementById('art-tem-comunidade').checked,
-      comunidade:v('campo-comunidade'),
-      adicionais:v('art-adicionais')
-    };
-    let saved;
-    if(editingArtId) saved=await api.put('/articuladores/'+editingArtId, payload);
-    else saved=await api.post('/articuladores', payload);
-
-    // Upload da foto se selecionada
-    if(fotoFile) {
-      try { await api.uploadFoto(saved.id, fotoFile); }
-      catch(fe) { showToast('⚠️ Articulador salvo, mas erro no upload da foto: '+fe.message,'var(--accent)'); }
-    }
-    closeModal('modal-articulador');
-    showToast(editingArtId?'✅ Articulador atualizado!':'✅ Articulador cadastrado!');
-    await renderArticuladores();
-  } catch(err) { showToast('❌ '+err.message,'var(--danger)'); }
-  finally { btn.disabled=false; btn.textContent='💾 Salvar Articulador'; }
-}
-function v(id) { return document.getElementById(id).value.trim(); }
-
-async function verDetalhe(id) {
-  const a=STATE.articuladores.find(x=>x.id===id); if(!a) return;
-  // Busca atividades deste articulador
-  const ativs=await api.get('/atividades?articulador_id='+id);
-  const projList=STATE.projetos?STATE.projetos.filter(p=>p.proponente_id===id):[];
-  document.getElementById('modal-detalhe-content').innerHTML=`
-    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
-      ${renderAvatar(a,64)}
+  grid.innerHTML = articuladores.map(art => `
+    <div class="card articulador-card">
       <div>
-        <div style="font-size:1.2rem;font-weight:700">${a.nome}</div>
-        <div style="color:var(--text-2);font-size:.88rem">${a.ocupacao||''} ${a.nucleo?'· '+a.nucleo:''}</div>
-      </div>
-      <button class="btn btn-sm btn-secondary" style="margin-left:auto" onclick="closeModal('modal-detalhe');editarArticulador('${id}')">✏️ Editar</button>
-    </div>
-    <div class="divider"></div>
-    <div class="form-grid">
-      <div><span style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase">Formação</span><p style="font-size:.88rem;margin-top:.2rem">${a.formacao||'—'}</p></div>
-      <div><span style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase">Atuação</span><p style="font-size:.88rem;margin-top:.2rem">${a.atuacao||'—'}</p></div>
-      <div><span style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase">Instrução</span><p style="font-size:.88rem;margin-top:.2rem">${a.instrucao||'—'}</p></div>
-    </div>
-    ${(a.competencias||[]).length?`<div class="divider"></div><div style="font-size:.78rem;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:.5rem">Competências</div><div>${a.competencias.map(c=>`<span class="tag tag-green" style="margin:.15rem">${c}</span>`).join('')}</div>`:''}
-    ${(a.cursos||[]).length?`<div class="divider"></div><div style="font-size:.78rem;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:.5rem">Cursos AC</div><div>${a.cursos.map(c=>`<span class="tag tag-purple" style="margin:.15rem">${c}</span>`).join('')}</div>`:''}
-    ${(a.eventos||[]).length?`<div class="divider"></div><div style="font-size:.78rem;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:.5rem">Eventos</div><div>${a.eventos.map(ev=>`<span class="tag tag-amber" style="margin:.15rem">${ev}</span>`).join('')}</div>`:''}
-    ${a.tem_pesquisa?`<div class="divider"></div><div style="font-size:.78rem;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:.4rem">Pesquisa</div><p style="font-size:.88rem;color:var(--text-2)">${a.pesquisa}</p>`:''}
-    ${a.tem_comunidade?`<div class="divider"></div><div style="font-size:.78rem;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:.4rem">Comunidade</div><p style="font-size:.88rem;color:var(--text-2)">${a.comunidade}</p>`:''}
-    ${a.adicionais?`<div class="divider"></div><div style="font-size:.78rem;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:.4rem">Adicionais</div><p style="font-size:.88rem;color:var(--text-2)">${a.adicionais}</p>`:''}
-    <div class="divider"></div>
-    <div style="font-size:.78rem;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:.5rem">Atividades (${ativs.length})</div>
-    ${ativs.map(t=>`<div class="atividade-row" style="margin-bottom:.4rem"><span class="ativ-date">${t.data}</span><span class="ativ-name">${t.nome}</span><span class="tag tag-blue">${t.tipo}</span><span class="tag tag-green">${t.participantes||0} part.</span></div>`).join('')||'<p style="font-size:.82rem;color:var(--text-3)">Nenhuma atividade.</p>'}
-    <div style="margin-top:1rem"><button class="btn btn-danger btn-sm" onclick="deletarArticulador('${id}')">🗑️ Remover</button></div>`;
-  openModal('modal-detalhe');
-}
-
-async function deletarArticulador(id) {
-  if(!confirm('Remover este articulador e todos os seus dados?')) return;
-  showLoading(true);
-  try { await api.delete('/articuladores/'+id); closeModal('modal-detalhe'); showToast('🗑️ Removido','var(--danger)'); await renderArticuladores(); }
-  catch(e) { showToast('❌ '+e.message,'var(--danger)'); }
-  finally { showLoading(false); }
-}
-
-// ════════════════════════════════════════════════════════════
-// ATIVIDADES
-// ════════════════════════════════════════════════════════════
-async function renderAtividades() {
-  let p='?';
-  if(ativFiltros.articulador) p+=`articulador_id=${ativFiltros.articulador}&`;
-  if(ativFiltros.tipo)        p+=`tipo=${encodeURIComponent(ativFiltros.tipo)}&`;
-  if(ativFiltros.nucleo)      p+=`nucleo=${encodeURIComponent(ativFiltros.nucleo)}&`;
-  if(ativFiltros.de)          p+=`de=${ativFiltros.de}&`;
-  if(ativFiltros.ate)         p+=`ate=${ativFiltros.ate}&`;
-  STATE.atividades=await api.get('/atividades'+p);
-  if(!STATE.articuladores.length) STATE.articuladores=await api.get('/articuladores');
-  const total=STATE.atividades.reduce((s,t)=>s+(t.participantes||0),0);
-  const m=document.getElementById('main-content');
-  m.innerHTML=`
-    <div class="section-header"><div class="section-title">📋 Atividades</div><button class="btn btn-primary" onclick="abrirAtividade()">+ Registrar</button></div>
-    <div class="card"><div class="card-title">Filtros</div><div class="filter-bar">
-      <select onchange="ativFiltros.articulador=this.value;renderAtividades()">
-        <option value="">Todos os articuladores</option>
-        ${STATE.articuladores.map(a=>`<option value="${a.id}" ${ativFiltros.articulador===a.id?'selected':''}>${a.nome}</option>`).join('')}
-      </select>
-      <select onchange="ativFiltros.tipo=this.value;renderAtividades()"><option value="">Todos os tipos</option><option>Presencial</option><option>Virtual</option><option>Híbrido</option></select>
-      <input type="text" placeholder="Núcleo..." value="${ativFiltros.nucleo}" oninput="ativFiltros.nucleo=this.value;renderAtividades()">
-      <input type="date" value="${ativFiltros.de}" onchange="ativFiltros.de=this.value;renderAtividades()">
-      <input type="date" value="${ativFiltros.ate}" onchange="ativFiltros.ate=this.value;renderAtividades()">
-      <button class="btn btn-sm btn-secondary" onclick="ativFiltros={articulador:'',tipo:'',nucleo:'',de:'',ate:''};renderAtividades()">Limpar</button>
-    </div></div>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-num">${STATE.atividades.length}</div><div class="stat-label">Atividades</div></div>
-      <div class="stat-card"><div class="stat-num">${total.toLocaleString()}</div><div class="stat-label">Participantes</div></div>
-      <div class="stat-card"><div class="stat-num">${STATE.atividades.filter(t=>t.tipo==='Presencial').length}</div><div class="stat-label">Presenciais</div></div>
-      <div class="stat-card"><div class="stat-num">${STATE.atividades.filter(t=>t.tipo==='Virtual').length}</div><div class="stat-label">Virtuais</div></div>
-    </div>
-    ${STATE.atividades.map(t=>{
-      const art=STATE.articuladores.find(a=>a.id===t.articulador_id)||t.articulador||{};
-      return `<div class="atividade-row">
-        <span class="ativ-date">${t.data}</span>
-        <div><div class="ativ-name">${t.nome}</div><div style="font-size:.78rem;color:var(--text-2)">${art.nome||''} ${t.nucleo?'· '+t.nucleo:''}</div></div>
-        <div style="display:flex;gap:.35rem;margin-left:auto;align-items:center;flex-wrap:wrap">
-          <span class="tag ${t.tipo==='Virtual'?'tag-blue':t.tipo==='Híbrido'?'tag-purple':'tag-green'}">${t.tipo}</span>
-          <span class="tag tag-amber">${t.participantes||0} part.</span>
-          ${t.categoria?`<span class="tag tag-orange">${t.categoria}</span>`:''}
-        </div>
-        <button class="btn btn-sm btn-danger" onclick="deletarAtividade('${t.id}')">🗑️</button>
-      </div>`;
-    }).join('')||'<div class="empty-state"><div class="big">📋</div><p>Nenhuma atividade.</p></div>'}`;
-}
-function abrirAtividade() {
-  populateSelect('ativ-articulador');
-  document.getElementById('ativ-data').value=new Date().toISOString().split('T')[0];
-  ['ativ-nome','ativ-nucleo','ativ-descricao','ativ-foto1','ativ-foto2','ativ-foto3'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('ativ-participantes').value='';
-  openModal('modal-atividade');
-}
-async function saveAtividade(e) {
-  e.preventDefault();
-  try {
-    await api.post('/atividades',{
-      data:v('ativ-data'), nome:v('ativ-nome'), articulador_id:document.getElementById('ativ-articulador').value||null,
-      tipo:document.getElementById('ativ-tipo').value, participantes:parseInt(v('ativ-participantes'))||0,
-      nucleo:v('ativ-nucleo'), categoria:document.getElementById('ativ-categoria').value, descricao:v('ativ-descricao'),
-      fotos:['ativ-foto1','ativ-foto2','ativ-foto3'].map(id=>v(id)).filter(Boolean)
-    });
-    closeModal('modal-atividade'); showToast('✅ Atividade registrada!'); await renderAtividades();
-  } catch(err) { showToast('❌ '+err.message,'var(--danger)'); }
-}
-async function deletarAtividade(id) {
-  if(!confirm('Remover?')) return;
-  try { await api.delete('/atividades/'+id); showToast('🗑️ Removida','var(--danger)'); await renderAtividades(); }
-  catch(e) { showToast('❌ '+e.message,'var(--danger)'); }
-}
-
-// ════════════════════════════════════════════════════════════
-// DASHBOARD
-// ════════════════════════════════════════════════════════════
-async function renderDashboard() {
-  const d=await api.get('/dashboard/resumo'); STATE.dashboard=d;
-  const t=d.totais;
-  const byNucleo=Object.entries(d.byNucleo||{}).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const maxN=Math.max(...byNucleo.map(x=>x[1]),1);
-  const cbTop=Object.entries(d.competencias||{}).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const maxCb=Math.max(...cbTop.map(x=>x[1]),1);
-  const cursoTop=Object.entries(d.cursos||{}).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const maxCurso=Math.max(...cursoTop.map(x=>x[1]),1);
-  const mesTop=Object.entries(d.byMes||{}).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6);
-  const maxM=Math.max(...mesTop.map(x=>x[1]),1);
-  const m=document.getElementById('main-content');
-  m.innerHTML=`
-    <div class="section-header"><div class="section-title">📊 Dashboard & Relatórios</div><button class="btn btn-accent" onclick="exportarRelatorio()">⬇️ Exportar CSV</button></div>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-num" style="color:var(--primary)">${t.articuladores}</div><div class="stat-label">Articuladores</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--purple)">${t.nucleos}</div><div class="stat-label">Núcleos</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--info)">${t.atividades}</div><div class="stat-label">Atividades</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${t.participantes.toLocaleString()}</div><div class="stat-label">Participantes</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--orange)">${t.projetos}</div><div class="stat-label">Projetos</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--danger)">${t.mediaPorAtividade}</div><div class="stat-label">Média/Atividade</div></div>
-    </div>
-    <div class="grid-2">
-      <div class="card"><div class="card-title">🏠 Atividades por Núcleo</div><div class="bar-chart">${byNucleo.map(([n,val])=>`<div class="bar-row"><div class="bar-label" title="${n}">${n}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/maxN*100)}%"></div></div><div class="bar-val">${val}</div></div>`).join('')||'<p style="color:var(--text-3);font-size:.82rem">Sem dados</p>'}</div></div>
-      <div class="card"><div class="card-title">🛠️ Competências mais presentes</div><div class="bar-chart">${cbTop.map(([n,val])=>`<div class="bar-row"><div class="bar-label" title="${n}">${n}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/maxCb*100)}%;background:var(--accent)"></div></div><div class="bar-val" style="color:var(--accent)">${val}</div></div>`).join('')||'<p style="color:var(--text-3);font-size:.82rem">Sem dados</p>'}</div></div>
-      <div class="card"><div class="card-title">🎓 Cursos AC mais realizados</div><div class="bar-chart">${cursoTop.map(([n,val])=>`<div class="bar-row"><div class="bar-label" title="${n}">${n}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/maxCurso*100)}%;background:var(--info)"></div></div><div class="bar-val" style="color:var(--info)">${val}</div></div>`).join('')||'<p style="color:var(--text-3);font-size:.82rem">Sem dados</p>'}</div></div>
-      <div class="card"><div class="card-title">📅 Atividades por Mês</div><div class="bar-chart">${mesTop.map(([mes,val])=>`<div class="bar-row"><div class="bar-label">${mes}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/maxM*100)}%;background:var(--primary-mid)"></div></div><div class="bar-val">${val}</div></div>`).join('')||'<p style="color:var(--text-3);font-size:.82rem">Sem dados</p>'}</div></div>
-    </div>
-    <div class="card"><div class="card-title">🎓 Nível de Instrução</div><div style="display:flex;flex-wrap:wrap;gap:.75rem">${Object.entries(d.instrucao||{}).map(([nivel,cnt])=>`<div style="text-align:center;padding:.75rem 1rem;border:1px solid var(--border);border-radius:8px;background:var(--primary-light)"><div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${cnt}</div><div style="font-size:.75rem;color:var(--text-2);margin-top:.2rem;max-width:100px">${nivel}</div></div>`).join('')||'<p style="color:var(--text-3);font-size:.82rem">Sem dados</p>'}</div></div>
-    <div class="card"><div class="card-title">📋 Indicadores de Mobilização por Núcleo</div><div class="grid-3">${(d.mobilizacao||[]).map(n=>`<div class="card" style="margin-bottom:0"><div style="font-weight:700;font-size:.9rem;margin-bottom:.5rem">${n.nucleo}</div><div style="font-size:.8rem;color:var(--text-2)">${n.articuladores} art. · ${n.atividades} atv. · ${n.participantes} part.</div><div class="progress-bar" style="margin-top:.5rem"><div class="progress-fill" style="width:${n.score}%;background:${n.score>70?'var(--primary)':n.score>40?'var(--accent)':'var(--danger)'}"></div></div><div style="font-size:.75rem;text-align:right;color:var(--text-3)">Índice: ${n.score}</div></div>`).join('')||'<p style="color:var(--text-3);font-size:.82rem">Cadastre articuladores com núcleos.</p>'}</div></div>`;
-}
-
-async function exportarRelatorio() {
-  showLoading(true);
-  try {
-    const arts=await api.get('/articuladores');
-    const rows=[['Nome','Núcleo','Ocupação','Formação','Atuação','Instrução','Competências','Cursos','Eventos','Pesquisa','Comunidade']];
-    for(const a of arts) rows.push([a.nome,a.nucleo||'',a.ocupacao||'',a.formacao||'',a.atuacao||'',a.instrucao||'',(a.competencias||[]).join('; '),(a.cursos||[]).join('; '),(a.eventos||[]).join('; '),a.tem_pesquisa?'Sim':'Não',a.tem_comunidade?'Sim':'Não']);
-    const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const el=document.createElement('a'); el.href=url; el.download='articuladores.csv'; el.click();
-    showToast('📥 CSV exportado!');
-  } finally { showLoading(false); }
-}
-
-// ════════════════════════════════════════════════════════════
-// REDE COLABORATIVA
-// ════════════════════════════════════════════════════════════
-async function renderRede() {
-  let params='?'; if(redeSearch) params+=`busca=${encodeURIComponent(redeSearch)}&`;
-  const arts=await api.get('/articuladores'+params);
-  STATE.articuladores=arts;
-  const allComps=[...new Set(arts.flatMap(a=>a.competencias||[]))];
-  const filtered=arts.filter(a=>!redeFilter||(a.competencias||[]).includes(redeFilter));
-  const m=document.getElementById('main-content');
-  m.innerHTML=`
-    <div class="section-header"><div class="section-title">🤝 Rede Colaborativa — Banco de Talentos</div></div>
-    <div class="filter-bar">
-      <div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar..." value="${redeSearch}" oninput="redeSearch=this.value;renderRede()" style="padding-left:2rem;min-width:220px"></div>
-      <select onchange="redeFilter=this.value;renderRede()"><option value="">Filtrar por competência...</option>${allComps.map(c=>`<option value="${c}" ${redeFilter===c?'selected':''}>${c}</option>`).join('')}</select>
-      ${redeFilter?`<button class="btn btn-sm btn-secondary" onclick="redeFilter='';renderRede()">Limpar</button>`:''}
-      <span style="font-size:.82rem;color:var(--text-3)">${filtered.length} articulador(es)</span>
-    </div>
-    <div class="grid-2">${filtered.map(a=>`<div class="rede-card">
-      <div style="display:flex;align-items:center;gap:.75rem">${renderAvatar(a,44)}
-        <div><div style="font-weight:700;font-size:.95rem">${a.nome}</div><div style="font-size:.78rem;color:var(--text-2)">${a.ocupacao||''} ${a.nucleo?'· '+a.nucleo:''}</div></div>
-      </div>
-      ${a.formacao?`<div style="font-size:.8rem;color:var(--text-2)">📚 ${a.formacao} · ${a.atuacao||''}</div>`:''}
-      ${a.instrucao?`<span class="tag tag-blue" style="font-size:.72rem">${a.instrucao.split('(')[0].trim()}</span>`:''}
-      ${(a.competencias||[]).length?`<div>${a.competencias.map(c=>`<span class="competencia-tag" style="background:var(--primary-light);color:var(--primary)">${c}</span>`).join('')}</div>`:''}
-      ${(a.cursos||[]).length?`<div>${a.cursos.map(c=>`<span class="competencia-tag" style="background:var(--purple-light);color:var(--purple)">${c}</span>`).join('')}</div>`:''}
-      ${a.tem_comunidade?`<div style="font-size:.78rem;color:var(--text-2)">🏘️ ${a.comunidade||''}</div>`:''}
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.25rem">
-        <span></span><button class="btn btn-sm btn-secondary" onclick="verDetalhe('${a.id}')">Ver perfil →</button>
-      </div>
-    </div>`).join('')||'<div class="empty-state"><div class="big">🤝</div><p>Nenhum articulador encontrado.</p></div>'}</div>`;
-}
-
-// ════════════════════════════════════════════════════════════
-// PROJETOS
-// ════════════════════════════════════════════════════════════
-async function renderProjetos() {
-  let params='?'; if(projStatusFilter!=='Todos') params+=`status=${encodeURIComponent(projStatusFilter)}&`;
-  STATE.projetos=await api.get('/projetos'+params);
-  if(!STATE.articuladores.length) STATE.articuladores=await api.get('/articuladores');
-  const statusColors={'Ideia':'tag-amber','Buscando parceiros':'tag-blue','Em desenvolvimento':'tag-purple','Em andamento':'tag-green','Concluído':'tag-orange'};
-  const m=document.getElementById('main-content');
-  m.innerHTML=`
-    <div class="section-header"><div class="section-title">💡 Quadro de Projetos</div><button class="btn btn-primary" onclick="abrirProjeto()">+ Novo Projeto</button></div>
-    <div class="inner-tabs">${['Todos','Ideia','Buscando parceiros','Em desenvolvimento','Em andamento','Concluído'].map(s=>`<button class="inner-tab ${projStatusFilter===s?'active':''}" onclick="projStatusFilter='${s}';renderProjetos()">${s}</button>`).join('')}</div>
-    ${STATE.projetos.map(p=>{
-      const prop=p.proponente||(STATE.articuladores.find(a=>a.id===p.proponente_id)||{});
-      const conexoes=STATE.articuladores.filter(a=>a.id!==p.proponente_id&&(p.tags||[]).some(t=>[...(a.competencias||[]),...(a.cursos||[])].some(x=>x.toLowerCase().includes(t.toLowerCase())))).slice(0,3);
-      return `<div class="projeto-card">
-        <div style="display:flex;align-items:flex-start;gap:.75rem">
-          <div style="flex:1">
-            <div style="font-weight:700;font-size:.95rem;margin-bottom:.4rem">${p.titulo}</div>
-            <div style="font-size:.83rem;color:var(--text-2);margin-bottom:.75rem">${p.descricao||''}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.5rem">${(p.tags||[]).map(t=>`<span class="tag tag-green" style="font-size:.72rem">${t}</span>`).join('')}</div>
-            <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
-              <span class="tag ${statusColors[p.status]||'tag-amber'}">${p.status}</span>
-              ${prop.nome?`<span style="font-size:.8rem;color:var(--text-2)">👤 ${prop.nome}</span>`:''}
+        <div class="articulador-header">
+          <div>
+            <h3 style="font-size: 1.1rem; color: var(--text);">${art.nome}</h3>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:4px">
+               <span style="font-size: 0.75rem; color: var(--text-light);">${art.nucleo}</span>
             </div>
           </div>
-          <button class="btn btn-sm btn-danger" onclick="deletarProjeto('${p.id}')">🗑️</button>
+          <span class="badge">Articulador</span>
         </div>
-        ${conexoes.length?`<div style="height:1px;background:var(--border);margin:.75rem 0"></div>
-        <div style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:.4rem">Articuladores sugeridos</div>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap">${conexoes.map(a=>`<div style="display:flex;align-items:center;gap:.35rem;cursor:pointer" onclick="verDetalhe('${a.id}')">${renderAvatar(a,26)}<span style="font-size:.78rem;font-weight:600;color:var(--primary)">${a.nome}</span></div>`).join('')}</div>`:''}
-      </div>`;
-    }).join('')||'<div class="empty-state"><div class="big">💡</div><p>Nenhum projeto nesta categoria.</p></div>'}`;
-}
-function abrirProjeto() { populateSelect('proj-proponente'); ['proj-titulo','proj-desc','proj-tags'].forEach(id=>document.getElementById(id).value=''); openModal('modal-projeto'); }
-async function saveProjeto(e) {
-  e.preventDefault();
-  try {
-    await api.post('/projetos',{titulo:v('proj-titulo'),descricao:v('proj-desc'),proponente_id:document.getElementById('proj-proponente').value||null,status:document.getElementById('proj-status').value,tags:v('proj-tags').split(',').map(t=>t.trim()).filter(Boolean)});
-    closeModal('modal-projeto'); showToast('✅ Projeto publicado!'); await renderProjetos();
-  } catch(e) { showToast('❌ '+e.message,'var(--danger)'); }
-}
-async function deletarProjeto(id) {
-  if(!confirm('Remover?')) return;
-  try { await api.delete('/projetos/'+id); showToast('🗑️ Removido','var(--danger)'); await renderProjetos(); }
-  catch(e) { showToast('❌ '+e.message,'var(--danger)'); }
-}
-
-// ════════════════════════════════════════════════════════════
-// FERRAMENTAS
-// ════════════════════════════════════════════════════════════
-async function renderFerramentas() {
-  let p='?'; if(ferrFilter) p+=`categoria=${encodeURIComponent(ferrFilter)}&`;
-  STATE.ferramentas=await api.get('/ferramentas'+p);
-  const cats=[...new Set(STATE.ferramentas.map(f=>f.categoria))];
-  const icons={Programação:'💻',Robótica:'🤖',Design:'🎨',Vídeo:'🎬',Colaboração:'🤝',Formação:'📚',Outro:'🔧'};
-  const m=document.getElementById('main-content');
-  m.innerHTML=`
-    <div class="section-header"><div class="section-title">🧰 Cesta de Ferramentas</div><button class="btn btn-primary" onclick="abrirFerramenta()">+ Adicionar</button></div>
-    <div class="inner-tabs">${cats.map(c=>`<button class="inner-tab ${ferrFilter===c?'active':''}" onclick="ferrFilter='${c}';renderFerramentas()">${c}</button>`).join('')}${ferrFilter?`<button class="inner-tab" onclick="ferrFilter='';renderFerramentas()">Ver todas</button>`:''}</div>
-    ${STATE.ferramentas.map(f=>{const art=f.autor||(STATE.articuladores.find(a=>a.id===f.autor_id)||{});return `<div class="ferramenta-item">
-      <div style="font-size:1.2rem">${icons[f.categoria]||'🔧'}</div>
-      <div><div style="font-weight:600;font-size:.88rem">${f.nome}</div>${f.descricao?`<div style="font-size:.78rem;color:var(--text-2)">${f.descricao}</div>`:''}${art.nome?`<div style="font-size:.75rem;color:var(--text-3)">por ${art.nome}</div>`:''}</div>
-      <div style="display:flex;align-items:center;gap:.5rem;margin-left:auto">
-        <span class="tag tag-blue">${f.categoria}</span>
-        <a href="${f.url}" target="_blank" class="btn btn-sm btn-secondary">Acessar →</a>
-        <button class="btn btn-sm btn-danger" onclick="deletarFerramenta('${f.id}')">🗑️</button>
+        
+        <div class="ferramentas-list">
+          <p style="font-size: 0.7rem; font-weight: 800; color: var(--text-light); margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Inventário de Práticas</p>
+          ${art.ferramentas.length ? art.ferramentas.map(f => `
+            <div class="ferramenta-item ${getCatClass(f.categoria)}">
+              <span style="font-weight: 600;">${f.nome}</span>
+              <span style="font-size: 0.7rem; color: var(--text-light); font-weight: 700; text-transform: uppercase;">${f.categoria.split(' ')[0]}</span>
+            </div>
+          `).join('') : '<p style="font-size:0.8rem; color:var(--text-light); font-style:italic;">Comece a adicionar ferramentas!</p>'}
+        </div>
       </div>
-    </div>`;}).join('')||'<div class="empty-state"><div class="big">🧰</div><p>Nenhuma ferramenta.</p></div>'}`;
-}
-function abrirFerramenta() { populateSelect('ferr-autor'); ['ferr-nome','ferr-url','ferr-desc'].forEach(id=>document.getElementById(id).value=''); openModal('modal-ferramenta'); }
-async function saveFerramenta(e) {
-  e.preventDefault();
-  try {
-    await api.post('/ferramentas',{nome:v('ferr-nome'),url:v('ferr-url'),categoria:document.getElementById('ferr-cat').value,descricao:v('ferr-desc'),autor_id:document.getElementById('ferr-autor').value||null});
-    closeModal('modal-ferramenta'); showToast('✅ Ferramenta adicionada!'); await renderFerramentas();
-  } catch(e) { showToast('❌ '+e.message,'var(--danger)'); }
-}
-async function deletarFerramenta(id) {
-  if(!confirm('Remover?')) return;
-  try { await api.delete('/ferramentas/'+id); showToast('🗑️ Removida','var(--danger)'); await renderFerramentas(); }
-  catch(e) { showToast('❌ '+e.message,'var(--danger)'); }
+      
+      <button class="btn btn-accent" style="width: 100%; margin-top: 2rem; justify-content: center;" onclick="prepararFerramenta(${art.id})">
+        + Adicionar Item
+      </button>
+    </div>
+  `).join('');
 }
 
-// ════════════════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════════════════
-(async function init() {
-  showLoading(true);
-  try {
-    await api.get('/');   // health check
-    await renderArticuladores();
-  } catch(e) {
-    setApiOffline();
-    document.getElementById('main-content').innerHTML=`
-      <div class="empty-state" style="margin-top:3rem">
-        <div class="big">🔌</div>
-        <p style="font-size:1rem;margin-bottom:1rem">Não foi possível conectar à API.</p>
-        <p style="font-size:.88rem;color:var(--text-3)">Verifique se a URL da API está correta no topo do arquivo HTML (variável <code>API_URL</code>) e se o servidor está rodando.</p>
-        <button class="btn btn-primary" style="margin-top:1rem" onclick="location.reload()">↺ Tentar novamente</button>
-      </div>`;
-  } finally { showLoading(false); }
-})();
+function prepararFerramenta(id) {
+  document.getElementById('ferr-autor').value = id;
+  openModal('modal-ferramenta');
+}
+
+window.onload = () => {
+  setApiStatus(true);
+  renderArticuladores();
+};
 </script>
+
 </body>
 </html>
